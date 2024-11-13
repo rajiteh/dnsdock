@@ -84,6 +84,10 @@ func (d *DockerManager) run(ctx context.Context) error {
 	for _, container := range containers {
 		service, err := d.getService(container.ID)
 		if err != nil {
+			if strings.HasPrefix(err.Error(), "Skipping") {
+				logger.Debugf("Ignoring container '%s': %s", container.ID, err.Error())
+				continue
+			}
 			return fmt.Errorf("error getting service: %w", err)
 		}
 		err = d.list.AddService(container.ID, *service)
