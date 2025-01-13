@@ -4,10 +4,18 @@ go 1.21
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
+	github.com/cloudflare/cloudflare-go v0.113.0
 	github.com/docker/docker v26.1.0+incompatible
 	github.com/gorilla/mux v1.8.1
 	github.com/miekg/dns v1.1.59
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
+)
+
+require (
+	github.com/goccy/go-json v0.10.4 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
+	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )
 
 require (
@@ -35,10 +43,10 @@ require (
 	go.opentelemetry.io/otel/metric v1.26.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect
-	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.19.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/sys v0.28.0 // indirect
+	golang.org/x/time v0.8.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )

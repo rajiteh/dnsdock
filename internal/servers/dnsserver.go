@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -35,7 +36,9 @@ type Service struct {
 
 // NewService creates a new service
 func NewService(provider string) (s *Service) {
+
 	s = &Service{TTL: -1, Provider: provider}
+
 	return
 }
 func (s Service) String() string {
@@ -62,6 +65,7 @@ type DNSServer struct {
 	mux      *dns.ServeMux
 	services map[string]*Service
 	lock     *sync.RWMutex
+	cfDns    *CloudFlareDNSManager
 }
 
 // NewDNSServer create a new DNSServer
@@ -70,6 +74,29 @@ func NewDNSServer(c *utils.Config) *DNSServer {
 		config:   c,
 		services: make(map[string]*Service),
 		lock:     &sync.RWMutex{},
+	}
+
+	// Check if CF tokens are set in env
+	cfZone := os.Getenv("CF_ZONE")
+	cfToken := os.Getenv("CF_TOKEN")
+
+	cfTokenFile := os.Getenv("CF_TOKEN_FILE")
+	if cfToken == "" && cfTokenFile != "" {
+		cfTokenBytes, err := os.ReadFile(cfTokenFile)
+		if err != nil {
+			logger.Errorf("Failed to read Cloudflare token file: %s", err)
+		} else {
+			cfToken = strings.TrimSpace(string(cfTokenBytes))
+		}
+	}
+
+	if cfToken != "" && cfZone != "" {
+		logger.Debugf("Cloudflare DNS management initializing with zone %s", cfZone)
+		cfDns, err := NewCloudflareDNSManager(cfToken, cfZone)
+		if err != nil {
+			panic(err)
+		}
+		s.cfDns = cfDns
 	}
 
 	logger.Debugf("Handling DNS requests for '%s'.", c.Domain.String())
@@ -100,6 +127,17 @@ func (s *DNSServer) AddService(id string, service Service) (err error) {
 		defer s.lock.Unlock()
 		s.lock.Lock()
 
+		// Attempt to set CF record
+		if s.cfDns != nil {
+			serviceIp := service.IPs[0].String()
+			for _, alias := range service.Aliases {
+				err := s.cfDns.UpdateARecord(alias, serviceIp, service.TTL)
+				if err != nil {
+					logger.Errorf("Failed to update Cloudflare record for '%s': %s", alias, err)
+				}
+			}
+		}
+
 		id, err = s.getExpandedID(id)
 		if err != nil {
 			return err
@@ -115,7 +153,7 @@ func (s *DNSServer) AddService(id string, service Service) (err error) {
 			s.mux.HandleFunc(alias+".", s.handleRequest)
 		}
 	} else {
-		return fmt.Errorf("Service '%s' ignored: No IP provided:", id)
+		logger.Warningf("Service '%s' ignored: No IP provided:", id)
 	}
 
 	return nil
